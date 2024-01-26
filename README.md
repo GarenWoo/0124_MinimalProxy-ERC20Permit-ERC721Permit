@@ -30,7 +30,7 @@
 
 - **`setLibraryAddress`方法**：`onlyOwner`，指定 implement 合约的地址，便于升级/维护。
 
-- **`setMaxAmountOfInscription`方法**：`onlyOwner`，指定最大可部署的合约实例数额（用于管理该合约）
+- **`setMaxAmountOfInscription`方法**：`onlyOwner`，指定最大可部署的合约实例数额（用于管理该合约）。
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -556,6 +556,10 @@ contract ERC777Token_GTST is ERC20, ERC20Permit, ReentrancyGuard {
 
 
 ## 3. 离线授权的白名单地址才可购买 NFT
+
+**ERC721TokenWithPermit 合约已部署**：https://mumbai.polygonscan.com/address/0x393ad85B01cBeB699E639D10fb260cA383C02f8D
+
+**NFTMarketV2 合约已部署**：https://mumbai.polygonscan.com/address/0xd72613861ef1cf121D9E55b7eC375Ac67bFb7c01
 
 ### （ 1 ）签名实现 EIP-712 格式
 
