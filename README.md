@@ -12,6 +12,8 @@
 
 **FairTokenGFT 合约（implement 合约）**：https://mumbai.polygonscan.com/address/0x7d92cBCB8557d6366C82B14d0A3409F42a61d73e
 
+
+
 ### ( 1 ) 工厂合约：ERC20TokenFactory
 
 #### **此合约部分状态变量与方法的说明：**
@@ -291,13 +293,63 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
 
 **SuperBank 合约已部署**：https://mumbai.polygonscan.com/address/0x6BA3e6E7B7de36553177AD35138768bcEb872697
 
-### ( 1 ) 签名实现 EIP-712 格式
+
+
+### ( 1 ) 离线签名
+
+如下图所示，签名信息已实现 **EIP-712** 格式。
+
+签名使用的前端代码 https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx 
 
 ![IMG2_SignMessage_ERC20Permit](./images/IMG2_SignMessage_ERC20Permit.png)
 
 
 
-### ( 2 ) 实现签名 Deposit 的合约（SuperBank 合约）：
+#### **签名内容**：
+
+**Token Name**：Garen Test Safe Token
+
+**chainId**：80001
+
+**Verifying Contract Address**：0x94B1424C3435757E611F27543eedB37bcD3BDEb4
+
+**Buyer**：0x9314f15a04d9a69bCE94758e535e49c4e6c6770E
+
+**tokenId**：4000000000000000000
+
+**Deadline**：1706636458
+
+
+
+#### **签名信息**：
+
+![IMG3_SignedMessage_ERC20Permit](./images/IMG3_SignedMessage_ERC20Permit.png)
+
+**signature**：0x3229631a3b4127e98e4e6e7c8425b021c832775a3502022f13bbe3aad87ecb2622f420e0019edc4e4a92db9258e947c039d253326a08d7beaadb73c8752ce7c91b
+
+**`v`**：27
+
+**`r`**：0x3229631a3b4127e98e4e6e7c8425b021c832775a3502022f13bbe3aad87ecb26
+
+**`s`**：0x22f420e0019edc4e4a92db9258e947c039d253326a08d7beaadb73c8752ce7c9
+
+
+
+### ( 2 ) 验证签名
+
+调用 **SuperBank** 合约`depositTokenWithPermit`方法来实现 token 的离线`approve` ，将如下信息和已获得的 **`v`**、**`r`**、**`s`**输入到该方法中来验证签名：
+
+**`_tokenAddr`**：0x94B1424C3435757E611F27543eedB37bcD3BDEb4
+
+**`_tokenAmount`**（要授权的额度）：4000000000000000000
+
+**`_deadline`**：1706636458
+
+交易信息（成功）：https://mumbai.polygonscan.com/tx/0xd48438c92f9fc8888ed4a819d4d0fa204b00931b37028c8be092dc254d000c69
+
+
+
+### ( 3 ) 实现签名 Deposit 的合约（SuperBank 合约）：
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -451,7 +503,7 @@ contract SuperBank is Bank {
 
 
 
-### ( 3 ) 实现 EIP2612 的合约（ERC777Token_GTST 合约）：
+### ( 4 ) 实现 EIP2612 的合约（ERC777Token_GTST 合约）：
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -557,17 +609,69 @@ contract ERC777Token_GTST is ERC20, ERC20Permit, ReentrancyGuard {
 
 ## 3. 离线授权的白名单地址才可购买 NFT
 
-**ERC721TokenWithPermit 合约已部署**：https://mumbai.polygonscan.com/address/0x393ad85B01cBeB699E639D10fb260cA383C02f8D
+**ERC721TokenWithPermit 合约已部署**：https://mumbai.polygonscan.com/address/0xFE6b4b135199A3e98A997321BcF9c6AC5A113247
 
-**NFTMarketV2 合约已部署**：https://mumbai.polygonscan.com/address/0xd72613861ef1cf121D9E55b7eC375Ac67bFb7c01
-
-### （ 1 ）签名实现 EIP-712 格式
-
-![IMG3_SignMessage_ERC721Permit](./images/IMG3_SignMessage_ERC721Permit.png)
+**NFTMarketV2 合约已部署**：https://mumbai.polygonscan.com/address/0xba66A8d3977Bf60de733B8ce7Ef6BE9BEE27f3a5
 
 
 
-### ( 2 ) 实现了包含 Permit 的 ERC721 Token 合约：ERC721TokenWithPermit 合约
+### （ 1 ）离线签名
+
+如下图所示，签名信息已实现 **EIP-712** 格式。
+
+[签名使用的前端代码]: https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx
+
+![IMG4_SignMessage_ERC721Permit](./images/IMG4_SignMessage_ERC721Permit.png)
+
+
+
+#### **签名内容**：
+
+**Token Name**：Garen at OpenSpace
+
+**chainId**：80001
+
+**Verifying Contract Address**：0xFE6b4b135199A3e98A997321BcF9c6AC5A113247
+
+**Buyer**：0x028e84e3452738CAD904FD6c24a1Cb4A1855695E
+
+**tokenId**：1
+
+**Deadline**：1706636458
+
+
+
+#### **签名信息**：
+
+![IMG5_SignedMessage_ERC721Permit](./images/IMG5_SignedMessage_ERC721Permit.png)
+
+**signature**：0xf43a63e8062eac4cd5058dde3fbcaed087fce196fd6de9fed6032f49ba3e172e5a19085e4264af0dc0e786bdcf9ebaf55087acdd2f97e74a57d7a5a3e0ed453b1b
+
+**`v`**：27
+
+**`r`**：0xf43a63e8062eac4cd5058dde3fbcaed087fce196fd6de9fed6032f49ba3e172e
+
+**`s`**：0x5a19085e4264af0dc0e786bdcf9ebaf55087acdd2f97e74a57d7a5a3e0ed453b
+
+
+
+### ( 2 ) 验证签名
+
+调用 **NFTMarketV2** 合约`buyWithPermit`方法来购买已上架的 NFT ，将如下信息和已获得的 **`v`**、**`r`**、**`s`**输入到该方法中来验证签名：
+
+**`_nftAddr`**：0xFE6b4b135199A3e98A997321BcF9c6AC5A113247
+
+**`_tokenId`**：1
+
+**`_bidValue`**：3000000000000000000（高于**`price`**）
+
+**`_deadline`**：1706636458
+
+交易信息（成功）：https://mumbai.polygonscan.com/tx/0xa4ea15b88212a3ef8e3741319db59e2ddf70780c24c367806d18e2297d3390f0
+
+
+
+### ( 3 ) 实现了包含 Permit 的 ERC721 Token 合约：ERC721TokenWithPermit 合约
 
 ```solidity
 //SPDX-License-Identifier: MIT
@@ -640,7 +744,7 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
      * @param _v ECDSA signature parameter v
      * @param _r ECDSA signature parameter r
      * @param _s ECDSA signature parameter s
-     * @dev NFTSeller is the EOA who wants to the NFT and also the previous owner of NFT after the NFT is listed.
+     * @dev NFTAuth is the address which owns the NFT or is approved to control the NFT. Here is the NFT exchange in this function.
      * @dev buyer is the EOA who wants to buy the NFT from the NFT exchange.
      */
     function NFTPermit(
@@ -652,10 +756,10 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
         bytes32 _s
     ) external returns (bool) {
         address NFTAdmin = owner;
-        address NFTSeller = msg.sender;
+        address NFTAuth = msg.sender;
         address buyer = _spender;
         bytes32 PERMIT_TYPEHASH = keccak256(
-            "NFTPermit(address NFTSeller,address buyer,uint256 tokenId,uint256 signerNonce,uint256 deadline)"
+            "NFTPermit(address buyer,uint256 tokenId,uint256 signerNonce,uint256 deadline)"
         );
         if (block.timestamp > _deadline) {
             revert ExpiredSignature(block.timestamp, _deadline);
@@ -664,7 +768,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
         bytes32 structHash = keccak256(
             abi.encode(
                 PERMIT_TYPEHASH,
-                NFTSeller,
                 buyer,
                 _tokenId,
                 _useNonce(NFTAdmin),
@@ -679,7 +782,7 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
             revert Unapproved(signer, NFTAdmin);
         }
 
-        _approve(buyer, _tokenId, NFTSeller);
+        _approve(buyer, _tokenId, NFTAuth);
         return true;
     }
 
@@ -695,7 +798,7 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
 
 
 
-### ( 3 ) 实现验签的 NFTMarket 合约：NFTMarketV2 合约
+### ( 4 ) 实现验签的 NFTMarket 合约：NFTMarketV2 合约
 
 此合约实现了`buyWithPermit`方法，用于在购买 NFT 之前验证签名的签名者是否是 NFT 合约的 owner（即项目方管理者）。
 

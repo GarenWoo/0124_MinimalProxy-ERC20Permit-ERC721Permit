@@ -25,19 +25,11 @@ async function main() {
   // const FairTokenGFTAddr = GFT.target;
   // console.log("FairTokenGFT contract has been deployed to: " + FairTokenGFTAddr);
 
-  // const ERC721TokenWithPermitContract = await hre.ethers.getContractFactory("ERC721TokenWithPermit");
-  // const ERC721TokenWithPermit = await ERC721TokenWithPermitContract.deploy();
-  // await ERC721TokenWithPermit.waitForDeployment();
-  // const ERC721TokenWithPermitAddr = ERC721TokenWithPermit.target;
-  // console.log("ERC721TokenWithPermit contract has been deployed to: " + ERC721TokenWithPermitAddr);
-
-
-  const ERC721TokenWithPermitContract = await hre.ethers.getContractFactory("ERC721TokenWithPermit_TEMP1");
+  const ERC721TokenWithPermitContract = await hre.ethers.getContractFactory("ERC721TokenWithPermit");
   const ERC721TokenWithPermit = await ERC721TokenWithPermitContract.deploy();
   await ERC721TokenWithPermit.waitForDeployment();
   const ERC721TokenWithPermitAddr = ERC721TokenWithPermit.target;
   console.log("ERC721TokenWithPermit contract has been deployed to: " + ERC721TokenWithPermitAddr);
-
 
   // const SuperBankContract = await hre.ethers.getContractFactory("SuperBank");
   // const SuperBank = await SuperBankContract.deploy();
@@ -45,11 +37,12 @@ async function main() {
   // const SuperBankAddr = SuperBank.target;
   // console.log("SuperBank contract has been deployed to: " + SuperBankAddr);
 
-  // const NFTMarketV2Contract = await hre.ethers.getContractFactory("NFTMarketV2");
-  // const NFTMarketV2 = await NFTMarketV2Contract.deploy(ERC777Token_GTSTAddr);
-  // await NFTMarketV2.waitForDeployment();
-  // const NFTMarketV2Addr = NFTMarketV2.target;
-  // console.log("NFTMarketV2 contract has been deployed to: " + NFTMarketV2Addr);
+  const ERC777Token_GTSTAddr = "0x94B1424C3435757E611F27543eedB37bcD3BDEb4";
+  const NFTMarketV2Contract = await hre.ethers.getContractFactory("NFTMarketV2");
+  const NFTMarketV2 = await NFTMarketV2Contract.deploy(ERC777Token_GTSTAddr);
+  await NFTMarketV2.waitForDeployment();
+  const NFTMarketV2Addr = NFTMarketV2.target;
+  console.log("NFTMarketV2 contract has been deployed to: " + NFTMarketV2Addr);
 
   // const ERC20TokenFactoryContract = await hre.ethers.getContractFactory("ERC20TokenFactory");
   // const ERC20TokenFactory = await ERC20TokenFactoryContract.deploy(FairTokenGFTAddr);
