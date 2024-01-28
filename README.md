@@ -299,7 +299,7 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
 
 如下图所示，签名信息已实现 **EIP-712** 格式。
 
-签名使用的前端代码 https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx 
+[签名使用的前端代码](https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx)
 
 ![IMG2_SignMessage_ERC20Permit](./images/IMG2_SignMessage_ERC20Permit.png)
 
@@ -619,7 +619,7 @@ contract ERC777Token_GTST is ERC20, ERC20Permit, ReentrancyGuard {
 
 如下图所示，签名信息已实现 **EIP-712** 格式。
 
-[签名使用的前端代码]: https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx
+[签名使用的前端代码](https://github.com/GarenWoo/0119-0122_NFTMarketDapp/blob/main/src/App.tsx)
 
 ![IMG4_SignMessage_ERC721Permit](./images/IMG4_SignMessage_ERC721Permit.png)
 
