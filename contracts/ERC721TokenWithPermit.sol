@@ -68,7 +68,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
      * @param _v ECDSA signature parameter v
      * @param _r ECDSA signature parameter r
      * @param _s ECDSA signature parameter s
-     * @dev NFTAuth is the address which owns the NFT or is approved to control the NFT. Here is the NFT exchange in this function.
      * @dev buyer is the EOA who wants to buy the NFT from the NFT exchange.
      */
     function NFTPermit(
@@ -80,7 +79,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
         bytes32 _s
     ) external returns (bool) {
         address NFTAdmin = owner;
-        address NFTAuth = msg.sender;
         address buyer = _spender;
         bytes32 PERMIT_TYPEHASH = keccak256(
             "NFTPermit(address buyer,uint256 tokenId,uint256 signerNonce,uint256 deadline)"
@@ -106,7 +104,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
             revert Unapproved(signer, NFTAdmin);
         }
 
-        _approve(buyer, _tokenId, NFTAuth);
         return true;
     }
 

@@ -609,7 +609,9 @@ contract ERC777Token_GTST is ERC20, ERC20Permit, ReentrancyGuard {
 
 ## 3. 离线授权的白名单地址才可购买 NFT
 
-**ERC721TokenWithPermit 合约已部署**：https://mumbai.polygonscan.com/address/0xFE6b4b135199A3e98A997321BcF9c6AC5A113247
+**ERC721TokenWithPermit 合约已部署**（2024.1.30更新）：https://mumbai.polygonscan.com/address/0x7e5F48B746E5435cE0518ad8a4A11516FD2a0a5C
+
+（旧版 ERC721TokenWithPermit 合约：https://mumbai.polygonscan.com/address/0xFE6b4b135199A3e98A997321BcF9c6AC5A113247）
 
 **NFTMarketV2 合约已部署**：https://mumbai.polygonscan.com/address/0xba66A8d3977Bf60de733B8ce7Ef6BE9BEE27f3a5
 
@@ -667,11 +669,11 @@ contract ERC777Token_GTST is ERC20, ERC20Permit, ReentrancyGuard {
 
 **`_deadline`**：1706636458
 
-交易信息（成功）：https://mumbai.polygonscan.com/tx/0xa4ea15b88212a3ef8e3741319db59e2ddf70780c24c367806d18e2297d3390f0
+交易信息（成功，旧版合约）：https://mumbai.polygonscan.com/tx/0xa4ea15b88212a3ef8e3741319db59e2ddf70780c24c367806d18e2297d3390f0
 
 
 
-### ( 3 ) 实现了包含 Permit 的 ERC721 Token 合约：ERC721TokenWithPermit 合约
+### ( 3 ) 实现了包含 Permit 的 ERC721 Token 合约：ERC721TokenWithPermit 合约（合约存在更新）
 
 ```solidity
 //SPDX-License-Identifier: MIT
@@ -744,7 +746,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
      * @param _v ECDSA signature parameter v
      * @param _r ECDSA signature parameter r
      * @param _s ECDSA signature parameter s
-     * @dev NFTAuth is the address which owns the NFT or is approved to control the NFT. Here is the NFT exchange in this function.
      * @dev buyer is the EOA who wants to buy the NFT from the NFT exchange.
      */
     function NFTPermit(
@@ -756,7 +757,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
         bytes32 _s
     ) external returns (bool) {
         address NFTAdmin = owner;
-        address NFTAuth = msg.sender;
         address buyer = _spender;
         bytes32 PERMIT_TYPEHASH = keccak256(
             "NFTPermit(address buyer,uint256 tokenId,uint256 signerNonce,uint256 deadline)"
@@ -782,7 +782,6 @@ contract ERC721TokenWithPermit is ERC721URIStorage, EIP712, Nonces {
             revert Unapproved(signer, NFTAdmin);
         }
 
-        _approve(buyer, _tokenId, NFTAuth);
         return true;
     }
 
