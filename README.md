@@ -26,7 +26,7 @@
 
 - **事件`ImpleCloned`**：记录本工厂合约所部署的合约实例的地址，随`deployInscription`的调用而触发。
 
-- **`deployInscription`方法**：使用 `Clone` 库中的 `clone` 方法基于 implement 合约的逻辑部署新的 ERC20 Token 合约实例，部署方式为内联汇编（这将导致在部署时不会运行 implement 合约中 `constructor`中的代码，需要在新部署的合约实例中增设 `init` 方法“手动”初始化）。
+- **`deployInscription`方法**：使用 `Clone` 库中的 `clone` 方法基于 implement 合约的逻辑部署新的 ERC20 Token 合约实例，部署方式为代理调用（这将导致在部署时无法运行 implement 合约中 `constructor`中的代码，需要在新部署的合约实例中增设 `init` 方法“手动”初始化）。
 
 - **`mintInscription`方法**：调用指定地址的 ERC20 Token 合约（由工厂合约部署合约实例）mint 方法为调用者铸造该合约实例的 token（token 数额为固定值，在调用`deployInscription` 方法创建合约实例时，由输入参数 `_perMint`确定）。
 
@@ -155,7 +155,7 @@ contract ERC20TokenFactory is Ownable {
 
 此合约为使用最小代理方式部署新合约实例的 implement 合约（也是逻辑合约）。
 
-需注意的是，新的合约实例由`Clone`库的`clone`方法部署，该方法是通过内联汇编实现的，导致无法运行 implement 合约的`constructor`。
+需注意的是，新的合约实例由`Clone`库的`clone`方法部署，该方法是通过代理调用实现的，导致无法运行 implement 合约的`constructor`。
 
 #### **此合约部分状态变量与方法的说明：**
 
