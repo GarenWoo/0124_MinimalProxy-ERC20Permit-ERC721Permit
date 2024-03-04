@@ -4,15 +4,15 @@
 
 ![IMG1_Task2](./images/IMG1_Task2.png)
 
-## 1. 在以太坊上用ERC20 模拟铭文铸造，创建工厂合约
+## 1. 在以太坊上用ERC20 模拟铭文铸造，创建工厂合约（2024.3.4 更新内容）
 
-**ERC20TokenFactory合约已部署**：https://mumbai.polygonscan.com/address/0xE37634EF6f122899d66B056f3C3e4C9bfF8c4aA4
+（2024.3.4 修改代码中部分 bug，现已重新部署）
 
-**由工厂合约部署的一个合约实例**：https://mumbai.polygonscan.com/address/0xf738C2Ef2b7BD4A8C8173aBBBb07d3683B3c9d12
+**FairTokenGFT 合约（implement 合约）****（2024.3.4 更新）：https://mumbai.polygonscan.com/address/0x1ED55676C8c089BdF44845aFA6e626F47A68a2de
 
-**FairTokenGFT 合约（implement 合约）**：https://mumbai.polygonscan.com/address/0x7d92cBCB8557d6366C82B14d0A3409F42a61d73e
+**ERC20TokenFactory合约已部署**（2024.3.4 更新）：https://mumbai.polygonscan.com/address/0x214223E800BFaed248eBcc24289824C09629e3e9
 
-
+**由工厂合约部署的一个合约实例****（2024.3.4 更新）：https://mumbai.polygonscan.com/address/0x8E6AF461ECe7e7A198eC18bcaEe48186d58C068b
 
 ### ( 1 ) 工厂合约：ERC20TokenFactory
 
@@ -38,27 +38,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./FairTokenGFT.sol";
+import "./FairTokenGFT_V1.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title This is a factory contract that clones ERC20Token contract instance as inscription
+ * @title This is a factory contract that deploys inscription (ERC-20 token) contract instances by cloning a logic contract that provides the implementation of the inscription.
  *
  * @author Garen Woo
  */
-contract ERC20TokenFactory is Ownable {
+contract ERC20TokenFactory_V1 is Ownable {
     using Clones for address;
 
     // This is the address of the implement contract(template of ERC20Token contract)
     address private libraryAddress;
+
     struct InscriptionStruct {
         string name;
         string symbol;
         uint256 totalSupply;
         uint256 perMint;
     }
+
     mapping(address => InscriptionStruct) public inscriptionInfo;
+
     event ImpleCloned(address instanceAddress);
 
     /**
@@ -66,7 +69,7 @@ contract ERC20TokenFactory is Ownable {
      * This parameter set a cap to avoid transaction failure which results from over-high gas.
      * This state variable can be modified by owner of this factory.
      */
-    uint public maxAmountOfInscription = 200;
+    uint256 public maxAmountOfInscription = 10000;
 
     constructor(address _libraryAddress) Ownable(msg.sender) {
         libraryAddress = _libraryAddress;
@@ -95,12 +98,7 @@ contract ERC20TokenFactory is Ownable {
         });
         inscriptionInfo[clonedImpleInstance] = deployedInscription;
 
-        FairTokenGFT(clonedImpleInstance).init(
-            _tokenName,
-            _tokenSymbol,
-            _tokenTotalSupply,
-            _perMint
-        );
+        FairTokenGFT_V1(clonedImpleInstance).init(address(this), _tokenName, _tokenSymbol, _tokenTotalSupply, _perMint);
         emit ImpleCloned(clonedImpleInstance);
     }
 
@@ -110,19 +108,7 @@ contract ERC20TokenFactory is Ownable {
      * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
      */
     function mintInscription(address _tokenAddr) public {
-        FairTokenGFT(_tokenAddr).mint(msg.sender);
-    }
-
-    /**
-     * @notice This function is used to get the current total amount of minted token. It's for the convenience of knowing
-     * if the current total amount has reached the maximum.
-     *
-     * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
-     */
-    function getInscriptionCurrentSupply(
-        address _tokenAddr
-    ) public view returns (uint256) {
-        return FairTokenGFT(_tokenAddr).totalSupply();
+        FairTokenGFT_V1(_tokenAddr).mint(msg.sender);
     }
 
     /**
@@ -134,17 +120,27 @@ contract ERC20TokenFactory is Ownable {
     }
 
     /**
+     * @dev Update the maximum of the ERC20 token contract instances
+     */
+    function setMaxAmountOfInscription(uint256 _max) external onlyOwner {
+        maxAmountOfInscription = _max;
+    }
+
+    /**
+     * @notice This function is used to get the current total amount of minted token. It's for the convenience of knowing
+     * if the current total amount has reached the maximum.
+     *
+     * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
+     */
+    function getInscriptionCurrentSupply(address _tokenAddr) public view returns (uint256) {
+        return FairTokenGFT_V1(_tokenAddr).totalSupply();
+    }
+
+    /**
      * @dev Get the current address of the implement contract
      */
     function getLibraryAddress() public view returns (address) {
         return libraryAddress;
-    }
-
-    /**
-     * @dev Update the maximum of the ERC20 token contract instances
-     */
-    function setMaxAmountOfInscription(uint _max) external onlyOwner {
-        maxAmountOfInscription = _max;
     }
 }
 ```
@@ -159,7 +155,7 @@ contract ERC20TokenFactory is Ownable {
 
 #### **此合约部分状态变量与方法的说明：**
 
-- **状态变量`_name`和`_symbol`**：由于部署合约未运行`constructor`中的赋值操作，导致 <u>ERC20 标准实现</u>的`_name` 和`_symbol`无法被赋值；此外，ERC20 Token 的`_name` 和`_symbol`为 <u>ERC20 标准实现</u>的私有变量，无法被子合约（`FairTokenGFT`）直接访问或修改。因此，在当前合约声明此两个私有的状态变量，用于模拟 <u>ERC20 标准实现</u>中的`_name` 和 `_symbol`。
+- **状态变量`_name`和`_symbol`**：由于部署合约未运行`constructor`中的赋值操作，导致 <u>ERC20 标准实现</u>的`_name` 和`_symbol`无法被赋值；此外，ERC20 Token 的`_name` 和`_symbol`为 <u>ERC20 标准实现</u>的私有变量，无法被子合约（`FairTokenGFT`）继承，更不可能被直接访问或修改。因此，在当前合约声明此两个私有的状态变量，用于模拟 <u>ERC20 标准实现</u>中的`_name` 和 `_symbol`，并通过方法 {name} 和 {symbol} 分别访问者两个变量。
 
 - **状态变量`maxSupply`**：此合约 Token 数量的上限。
 - **状态变量`amountPerMint`**：每次 mint 的数额，固定值。
@@ -170,66 +166,69 @@ contract ERC20TokenFactory is Ownable {
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 interface ITokenBank {
-    function tokensReceived(address, uint) external returns (bool);
+    function tokensReceived(address, uint256) external returns (bool);
 }
 
 interface INFTMarket {
-    function tokensReceived(address, address, uint, bytes calldata) external;
+    function tokensReceived(address, uint256, bytes calldata) external;
 }
 
-contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
-    using SafeERC20 for FairTokenGFT;
-    using Address for address;
-    address public owner;
+contract FairTokenGFT_V1 is ERC20, ERC20Permit, ReentrancyGuard, Initializable {
+    address public factory;
     string private _name;
     string private _symbol;
     uint256 public maxSupply;
     uint256 public amountPerMint;
-    error NotOwner(address caller);
+
+    error NotFactory(address caller);
     error NoTokenReceived();
-    error transferTokenFail();
+    error TransferTokenFail();
     error NotContract();
     error ReachMaxSupply(uint256 currentTotalSupply);
-    event TokenMinted(uint amount, uint timestamp);
 
-    constructor()
-        ERC20("Garen Fair Token", "GFT")
-        ERC20Permit("Garen Fair Token")
-    {
-        owner = msg.sender;
-        /// @dev Initial totalsupply is 100,000
-        _mint(msg.sender, 100000 * (10 ** uint256(decimals())));
+    event TokenMinted(uint256 amount, uint256 timestamp);
+    event TransferedWithCallback(address target, uint256 amount);
+    event TransferedWithCallbackForNFT(address target, uint256 amount, bytes data);
+
+    using SafeERC20 for FairTokenGFT_V1;
+    using Address for address;
+
+    constructor() ERC20("Garen Fair Token", "GFT") ERC20Permit("Garen Fair Token") {
+        factory = msg.sender;
     }
 
-    modifier onlyOwner() {
-        if (msg.sender != owner) {
-            revert NotOwner(msg.sender);
+    modifier onlyFactory() {
+        if (msg.sender != factory) {
+            revert NotFactory(msg.sender);
         }
         _;
     }
 
     function init(
+        address _factory,
         string calldata _initName,
         string calldata _initSymbol,
         uint256 _initTotalSupply,
         uint256 _initPerMint
-    ) external {
+    ) external initializer {
+        factory = _factory;
         _name = _initName;
         _symbol = _initSymbol;
         maxSupply = _initTotalSupply;
         amountPerMint = _initPerMint;
     }
 
-    function mint(address _recipient) external {
+    function mint(address _recipient) external onlyFactory {
         uint256 currentTotalSupply = totalSupply();
         if (currentTotalSupply + amountPerMint > maxSupply) {
             revert ReachMaxSupply(currentTotalSupply);
@@ -239,13 +238,10 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
     }
 
     // ERC20 Token Callback:
-    function transferWithCallback(
-        address _to,
-        uint _amount
-    ) external nonReentrant returns (bool) {
+    function transferWithCallback(address _to, uint256 _amount) external nonReentrant returns (bool) {
         bool transferSuccess = transfer(_to, _amount);
         if (!transferSuccess) {
-            revert transferTokenFail();
+            revert TransferTokenFail();
         }
         if (_isContract(_to)) {
             bool success = ITokenBank(_to).tokensReceived(msg.sender, _amount);
@@ -253,39 +249,48 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
                 revert NoTokenReceived();
             }
         }
+        emit TransferedWithCallback(_to, _amount);
         return true;
     }
 
     // ERC721 Token Callback:
     // @param: _data contains information of NFT, including ERC721Token address, tokenId and other potential information.
-    function transferWithCallbackForNFT(
-        address _to,
-        uint _bidAmount,
-        bytes calldata _data
-    ) external nonReentrant returns (bool) {
+    function transferWithCallbackForNFT(address _to, uint256 _bidAmount, bytes calldata _data)
+        external
+        nonReentrant
+        returns (bool)
+    {
         if (_isContract(_to)) {
-            INFTMarket(_to).tokensReceived(msg.sender, _to, _bidAmount, _data);
+            INFTMarket(_to).tokensReceived(_to, _bidAmount, _data);
         } else {
             revert NotContract();
         }
+        emit TransferedWithCallbackForNFT(_to, _bidAmount, _data);
         return true;
     }
 
-    function getBytesOfNFTInfo(
-        address _NFTAddr,
-        uint256 _tokenId
-    ) public pure returns (bytes memory) {
-        bytes memory NFTInfo = abi.encode(_NFTAddr, _tokenId);
-        return NFTInfo;
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
     }
 
     function _isContract(address account) internal view returns (bool) {
         return account.code.length > 0;
     }
+
+    function getBytesOfNFTInfo(address _NFTAddr, uint256 _tokenId) public pure returns (bytes memory) {
+        bytes memory NFTInfo = abi.encode(_NFTAddr, _tokenId);
+        return NFTInfo;
+    }
 }
 ```
 
-## 
+
+
+------
 
 ## 2. 使用 EIP2612 标准 Token ，使用签名的方式 deposite
 

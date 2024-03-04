@@ -1,27 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./FairTokenGFT.sol";
+import "./FairTokenGFT_V1.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title This is a factory contract that clones ERC20Token contract instance as inscription
+ * @title This is a factory contract that deploys inscription (ERC-20 token) contract instances by cloning a logic contract that provides the implementation of the inscription.
  *
  * @author Garen Woo
  */
-contract ERC20TokenFactory is Ownable {
+contract ERC20TokenFactory_V1 is Ownable {
     using Clones for address;
 
     // This is the address of the implement contract(template of ERC20Token contract)
     address private libraryAddress;
+
     struct InscriptionStruct {
         string name;
         string symbol;
         uint256 totalSupply;
         uint256 perMint;
     }
+
     mapping(address => InscriptionStruct) public inscriptionInfo;
+
     event ImpleCloned(address instanceAddress);
 
     /**
@@ -29,7 +32,7 @@ contract ERC20TokenFactory is Ownable {
      * This parameter set a cap to avoid transaction failure which results from over-high gas.
      * This state variable can be modified by owner of this factory.
      */
-    uint public maxAmountOfInscription = 200;
+    uint256 public maxAmountOfInscription = 10000;
 
     constructor(address _libraryAddress) Ownable(msg.sender) {
         libraryAddress = _libraryAddress;
@@ -58,12 +61,7 @@ contract ERC20TokenFactory is Ownable {
         });
         inscriptionInfo[clonedImpleInstance] = deployedInscription;
 
-        FairTokenGFT(clonedImpleInstance).init(
-            _tokenName,
-            _tokenSymbol,
-            _tokenTotalSupply,
-            _perMint
-        );
+        FairTokenGFT_V1(clonedImpleInstance).init(address(this), _tokenName, _tokenSymbol, _tokenTotalSupply, _perMint);
         emit ImpleCloned(clonedImpleInstance);
     }
 
@@ -73,19 +71,7 @@ contract ERC20TokenFactory is Ownable {
      * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
      */
     function mintInscription(address _tokenAddr) public {
-        FairTokenGFT(_tokenAddr).mint(msg.sender);
-    }
-
-    /**
-     * @notice This function is used to get the current total amount of minted token. It's for the convenience of knowing
-     * if the current total amount has reached the maximum.
-     *
-     * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
-     */
-    function getInscriptionCurrentSupply(
-        address _tokenAddr
-    ) public view returns (uint256) {
-        return FairTokenGFT(_tokenAddr).totalSupply();
+        FairTokenGFT_V1(_tokenAddr).mint(msg.sender);
     }
 
     /**
@@ -97,16 +83,26 @@ contract ERC20TokenFactory is Ownable {
     }
 
     /**
+     * @dev Update the maximum of the ERC20 token contract instances
+     */
+    function setMaxAmountOfInscription(uint256 _max) external onlyOwner {
+        maxAmountOfInscription = _max;
+    }
+
+    /**
+     * @notice This function is used to get the current total amount of minted token. It's for the convenience of knowing
+     * if the current total amount has reached the maximum.
+     *
+     * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
+     */
+    function getInscriptionCurrentSupply(address _tokenAddr) public view returns (uint256) {
+        return FairTokenGFT_V1(_tokenAddr).totalSupply();
+    }
+
+    /**
      * @dev Get the current address of the implement contract
      */
     function getLibraryAddress() public view returns (address) {
         return libraryAddress;
-    }
-
-    /**
-     * @dev Update the maximum of the ERC20 token contract instances
-     */
-    function setMaxAmountOfInscription(uint _max) external onlyOwner {
-        maxAmountOfInscription = _max;
     }
 }

@@ -1,64 +1,67 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 interface ITokenBank {
-    function tokensReceived(address, uint) external returns (bool);
+    function tokensReceived(address, uint256) external returns (bool);
 }
 
 interface INFTMarket {
-    function tokensReceived(address, address, uint, bytes calldata) external;
+    function tokensReceived(address, uint256, bytes calldata) external;
 }
 
-contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
-    using SafeERC20 for FairTokenGFT;
-    using Address for address;
-    address public owner;
+contract FairTokenGFT_V1 is ERC20, ERC20Permit, ReentrancyGuard, Initializable {
+    address public factory;
     string private _name;
     string private _symbol;
     uint256 public maxSupply;
     uint256 public amountPerMint;
-    error NotOwner(address caller);
+
+    error NotFactory(address caller);
     error NoTokenReceived();
-    error transferTokenFail();
+    error TransferTokenFail();
     error NotContract();
     error ReachMaxSupply(uint256 currentTotalSupply);
-    event TokenMinted(uint amount, uint timestamp);
 
-    constructor()
-        ERC20("Garen Fair Token", "GFT")
-        ERC20Permit("Garen Fair Token")
-    {
-        owner = msg.sender;
-        /// @dev Initial totalsupply is 100,000
-        _mint(msg.sender, 100000 * (10 ** uint256(decimals())));
+    event TokenMinted(uint256 amount, uint256 timestamp);
+    event TransferedWithCallback(address target, uint256 amount);
+    event TransferedWithCallbackForNFT(address target, uint256 amount, bytes data);
+
+    using SafeERC20 for FairTokenGFT_V1;
+    using Address for address;
+
+    constructor() ERC20("Garen Fair Token", "GFT") ERC20Permit("Garen Fair Token") {
+        factory = msg.sender;
     }
 
-    modifier onlyOwner() {
-        if (msg.sender != owner) {
-            revert NotOwner(msg.sender);
+    modifier onlyFactory() {
+        if (msg.sender != factory) {
+            revert NotFactory(msg.sender);
         }
         _;
     }
 
     function init(
+        address _factory,
         string calldata _initName,
         string calldata _initSymbol,
         uint256 _initTotalSupply,
         uint256 _initPerMint
-    ) external {
+    ) external initializer {
+        factory = _factory;
         _name = _initName;
         _symbol = _initSymbol;
         maxSupply = _initTotalSupply;
         amountPerMint = _initPerMint;
     }
 
-    function mint(address _recipient) external {
+    function mint(address _recipient) external onlyFactory {
         uint256 currentTotalSupply = totalSupply();
         if (currentTotalSupply + amountPerMint > maxSupply) {
             revert ReachMaxSupply(currentTotalSupply);
@@ -68,13 +71,10 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
     }
 
     // ERC20 Token Callback:
-    function transferWithCallback(
-        address _to,
-        uint _amount
-    ) external nonReentrant returns (bool) {
+    function transferWithCallback(address _to, uint256 _amount) external nonReentrant returns (bool) {
         bool transferSuccess = transfer(_to, _amount);
         if (!transferSuccess) {
-            revert transferTokenFail();
+            revert TransferTokenFail();
         }
         if (_isContract(_to)) {
             bool success = ITokenBank(_to).tokensReceived(msg.sender, _amount);
@@ -82,33 +82,40 @@ contract FairTokenGFT is ERC20, ERC20Permit, ReentrancyGuard {
                 revert NoTokenReceived();
             }
         }
+        emit TransferedWithCallback(_to, _amount);
         return true;
     }
 
     // ERC721 Token Callback:
     // @param: _data contains information of NFT, including ERC721Token address, tokenId and other potential information.
-    function transferWithCallbackForNFT(
-        address _to,
-        uint _bidAmount,
-        bytes calldata _data
-    ) external nonReentrant returns (bool) {
+    function transferWithCallbackForNFT(address _to, uint256 _bidAmount, bytes calldata _data)
+        external
+        nonReentrant
+        returns (bool)
+    {
         if (_isContract(_to)) {
-            INFTMarket(_to).tokensReceived(msg.sender, _to, _bidAmount, _data);
+            INFTMarket(_to).tokensReceived(_to, _bidAmount, _data);
         } else {
             revert NotContract();
         }
+        emit TransferedWithCallbackForNFT(_to, _bidAmount, _data);
         return true;
     }
 
-    function getBytesOfNFTInfo(
-        address _NFTAddr,
-        uint256 _tokenId
-    ) public pure returns (bytes memory) {
-        bytes memory NFTInfo = abi.encode(_NFTAddr, _tokenId);
-        return NFTInfo;
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
     }
 
     function _isContract(address account) internal view returns (bool) {
         return account.code.length > 0;
+    }
+
+    function getBytesOfNFTInfo(address _NFTAddr, uint256 _tokenId) public pure returns (bytes memory) {
+        bytes memory NFTInfo = abi.encode(_NFTAddr, _tokenId);
+        return NFTInfo;
     }
 }
