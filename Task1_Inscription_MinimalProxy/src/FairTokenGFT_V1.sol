@@ -17,24 +17,21 @@ interface INFTMarket {
 }
 
 contract FairTokenGFT_V1 is ERC20, ERC20Permit, ReentrancyGuard, Initializable {
+    using SafeERC20 for FairTokenGFT_V1;
+    using Address for address;
+
     address public factory;
     string private _name;
     string private _symbol;
-    uint256 public maxSupply;
-    uint256 public amountPerMint;
 
     error NotFactory(address caller);
     error NoTokenReceived();
     error TransferTokenFail();
     error NotContract();
-    error ReachMaxSupply(uint256 currentTotalSupply);
 
-    event TokenMinted(uint256 amount, uint256 timestamp);
+    event TokenMinted(address recipient, uint256 amount);
     event TransferedWithCallback(address target, uint256 amount);
     event TransferedWithCallbackForNFT(address target, uint256 amount, bytes data);
-
-    using SafeERC20 for FairTokenGFT_V1;
-    using Address for address;
 
     constructor() ERC20("Garen Fair Token", "GFT") ERC20Permit("Garen Fair Token") {
         factory = msg.sender;
@@ -50,24 +47,16 @@ contract FairTokenGFT_V1 is ERC20, ERC20Permit, ReentrancyGuard, Initializable {
     function init(
         address _factory,
         string calldata _initName,
-        string calldata _initSymbol,
-        uint256 _initTotalSupply,
-        uint256 _initPerMint
+        string calldata _initSymbol
     ) external initializer {
         factory = _factory;
         _name = _initName;
         _symbol = _initSymbol;
-        maxSupply = _initTotalSupply;
-        amountPerMint = _initPerMint;
     }
 
-    function mint(address _recipient) external onlyFactory {
-        uint256 currentTotalSupply = totalSupply();
-        if (currentTotalSupply + amountPerMint > maxSupply) {
-            revert ReachMaxSupply(currentTotalSupply);
-        }
-        _mint(_recipient, amountPerMint);
-        emit TokenMinted(amountPerMint, block.timestamp);
+    function mint(address _recipient, uint256 _amount) external onlyFactory {
+        _mint(_recipient, _amount);
+        emit TokenMinted(_recipient, _amount);
     }
 
     // ERC20 Token Callback:

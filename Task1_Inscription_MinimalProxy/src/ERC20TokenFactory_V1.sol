@@ -26,6 +26,9 @@ contract ERC20TokenFactory_V1 is Ownable {
     mapping(address => InscriptionStruct) public inscriptionInfo;
 
     event ImpleCloned(address instanceAddress);
+    event Minted(address inscriptAddr, uint256 mintedAmount);
+
+    error ReachMaxSupply(address inscriptAddr, uint256 currentSupply, uint256 mintedAmount, uint256 maxSupply);
 
     /**
      * @notice maxAmountOfInscription is a deterministic number that limits the maximum amount of inscription.
@@ -51,7 +54,7 @@ contract ERC20TokenFactory_V1 is Ownable {
         string memory _tokenSymbol,
         uint256 _tokenTotalSupply,
         uint256 _perMint
-    ) public {
+    ) public returns (address) {
         address clonedImpleInstance = libraryAddress.clone();
         InscriptionStruct memory deployedInscription = InscriptionStruct({
             name: _tokenName,
@@ -61,8 +64,9 @@ contract ERC20TokenFactory_V1 is Ownable {
         });
         inscriptionInfo[clonedImpleInstance] = deployedInscription;
 
-        FairTokenGFT_V1(clonedImpleInstance).init(address(this), _tokenName, _tokenSymbol, _tokenTotalSupply, _perMint);
+        FairTokenGFT_V1(clonedImpleInstance).init(address(this), _tokenName, _tokenSymbol);
         emit ImpleCloned(clonedImpleInstance);
+        return clonedImpleInstance;
     }
 
     /**
@@ -71,7 +75,10 @@ contract ERC20TokenFactory_V1 is Ownable {
      * @param _tokenAddr the address of the contract instance which is cloned from the implement contract
      */
     function mintInscription(address _tokenAddr) public {
-        FairTokenGFT_V1(_tokenAddr).mint(msg.sender);
+        _beforeMintInscription(_tokenAddr);
+        uint256 amountPerMint = inscriptionInfo[_tokenAddr].perMint;
+        FairTokenGFT_V1(_tokenAddr).mint(msg.sender, amountPerMint);
+        emit Minted(_tokenAddr, amountPerMint);
     }
 
     /**
@@ -85,8 +92,8 @@ contract ERC20TokenFactory_V1 is Ownable {
     /**
      * @dev Update the maximum of the ERC20 token contract instances
      */
-    function setMaxAmountOfInscription(uint256 _max) external onlyOwner {
-        maxAmountOfInscription = _max;
+    function setMaxAmountOfInscription(uint256 _newMaximum) external onlyOwner {
+        maxAmountOfInscription = _newMaximum;
     }
 
     /**
@@ -104,5 +111,21 @@ contract ERC20TokenFactory_V1 is Ownable {
      */
     function getLibraryAddress() public view returns (address) {
         return libraryAddress;
+    }
+
+    /**
+     * @dev Get the information of the inscription at `_inscriptionAddr`.
+     */
+    function getInscriptionInfo(address _inscriptionAddr) public view returns (InscriptionStruct memory) {
+        return inscriptionInfo[_inscriptionAddr];
+    }
+
+    function _beforeMintInscription(address _tokenAddr) internal view {
+        uint256 currentTotalSupply = FairTokenGFT_V1(_tokenAddr).totalSupply();
+        uint256 amountPerMint = inscriptionInfo[_tokenAddr].perMint;
+        uint256 maxSupply = inscriptionInfo[_tokenAddr].totalSupply;
+        if (currentTotalSupply + amountPerMint > maxSupply) {
+            revert ReachMaxSupply(_tokenAddr, currentTotalSupply, amountPerMint, maxSupply);
+        }
     }
 }
